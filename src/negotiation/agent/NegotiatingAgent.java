@@ -1,7 +1,7 @@
 package negotiation.agent;
 
 import jade.core.Agent;
-import negotiation.Item;
+import negotiation.util.Item;
 
 import java.util.ArrayList;
 
@@ -11,7 +11,6 @@ public class NegotiatingAgent extends Agent {
     private double money;
 
     protected void setup() {
-
 
     }
 }
