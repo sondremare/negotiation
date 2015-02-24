@@ -1,7 +1,6 @@
 package negotiation.util;
 
 import jade.core.AID;
-import negotiation.agent.NegotiatingAgent;
 
 import java.util.*;
 
@@ -11,7 +10,7 @@ public class ItemFactory {
     private static double MIN_ITEM_VALUE = 100;
     private static double MAX_ITEM_VALUE = 1000;
 
-    public static ArrayList<Item> getItemList(ArrayList<AID> agents) {
+    public static ArrayList<Item> createItems(ArrayList<AID> agents) {
         ArrayList<Item> itemList = new ArrayList<Item>();
         Random random = new Random();
         int numberOfItemsToGenerate = (random.nextInt((MAX_PER_AGENT - MIN_PER_AGENT) + 1) + MIN_PER_AGENT) * agents.size();
@@ -25,7 +24,7 @@ public class ItemFactory {
 
     public static String[] getItemsForAgents(ArrayList<AID> agents) {
         /** Assigning items at random to agents */
-        ArrayList<Item> itemList = getItemList(agents);
+        ArrayList<Item> itemList = createItems(agents);
         HashMap<Integer, ArrayList<Item>> assignedItems = new HashMap<Integer, ArrayList<Item>>();
         Collections.shuffle(itemList);
         for (int i = 0; i < itemList.size(); i++) {
