@@ -11,6 +11,7 @@ import negotiation.util.Item;
 import negotiation.util.ItemFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class ItemAdministratorAgent extends Agent {
 
@@ -43,17 +44,16 @@ public class ItemAdministratorAgent extends Agent {
     private class SendItemListsToAgents extends OneShotBehaviour {
 
         private ArrayList<AID> negotiatingAgents;
-        private ArrayList<Item> itemList;
 
         public SendItemListsToAgents(ArrayList<AID> negotiatingAgents) {
             this.negotiatingAgents = negotiatingAgents;
-            itemList = ItemFactory.getItemList(negotiatingAgents);
         }
 
         @Override
         public void action() {
-            for (int i = 0; i < itemList.size(); i++) {
-
+            String[] agentItems = ItemFactory.getItemsForAgents(negotiatingAgents);
+            for (int i = 0; i < agentItems.length; i++) {
+                System.out.println(agentItems);
             }
         }
     }
