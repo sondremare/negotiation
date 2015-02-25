@@ -7,6 +7,7 @@ import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
+import jade.lang.acl.ACLMessage;
 import negotiation.util.Item;
 import negotiation.util.ItemFactory;
 
@@ -52,8 +53,12 @@ public class ItemAdministratorAgent extends Agent {
         @Override
         public void action() {
             String[] agentItems = ItemFactory.getItemsForAgents(negotiatingAgents);
-            for (int i = 0; i < agentItems.length; i++) {
-                System.out.println(agentItems);
+            for (int i = 0; i < negotiatingAgents.size(); i++) {
+                ACLMessage message = new ACLMessage(ACLMessage.INFORM);
+                message.addReceiver(negotiatingAgents.get(i));
+                message.setContent(agentItems[i]);
+                message.setConversationId("ItemList");
+                myAgent.send(message);
             }
         }
     }
