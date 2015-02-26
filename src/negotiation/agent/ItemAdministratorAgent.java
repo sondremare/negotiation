@@ -24,6 +24,13 @@ public class ItemAdministratorAgent extends Agent {
 
         @Override
         public void action() {
+
+            try{
+                Thread.sleep(1000);
+            } catch (InterruptedException e){
+                e.printStackTrace();
+            }
+
             DFAgentDescription template = new DFAgentDescription();
             ServiceDescription serviceDescription = new ServiceDescription();
             serviceDescription.setType("NegotiatingAgent");
