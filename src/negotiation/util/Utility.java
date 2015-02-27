@@ -27,7 +27,7 @@ public class Utility {
         for (Item wishedItem : wishList) {
             recommendedPriceForAllWishedItems += wishedItem.getValue();
         }
-        double maxBidFactor = (double)(recommendedPriceForAllWishedItems / remainingMoney);
+        double maxBidFactor = ((double)recommendedPriceForAllWishedItems / remainingMoney);
         double buyersMinimumBid = 0;
         double buyersMaximumBid = maxBidFactor * item.getValue();
         return (int)(buyersMinimumBid + (buyersMaximumBid - buyersMinimumBid) * Math.pow((double)(time/totalTime), 1/Math.E));

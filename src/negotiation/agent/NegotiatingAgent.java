@@ -165,7 +165,7 @@ public class NegotiatingAgent extends Agent {
                     if (isBuyer) {
                         proposalUtility = Utility.getBuyersUtility(wantedItem, proposedPrice);
                         newProposalPrice = Utility.getBuyersNextBid(wishlist, money, wantedItem, timeSpent, totalTimeAllowed);
-                        newProposalUtility = Utility.convertPriceToBuyersUtility(newProposalPrice);
+                        newProposalUtility = Utility.getBuyersUtility(wantedItem, newProposalPrice);
                     }
                     else {
                         proposalUtility = Utility.getSellersUtility(wantedItem);
@@ -174,10 +174,12 @@ public class NegotiatingAgent extends Agent {
                     }
 
                     if (newProposalUtility < proposalUtility) {
+                        System.out.println("YAY");
                         returnMessage = createAcceptProposal(incomingMessage, proposedPrice);
                         //TODO start transaction
                     }
                     else {
+                        System.out.println(myAgent.getAID() + ", price: "+newProposalPrice);
                         returnMessage = createPropositionMessage(incomingMessage, newProposalPrice);
                     }
                     myAgent.send(returnMessage);
