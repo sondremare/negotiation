@@ -40,7 +40,7 @@ public class ItemAdministratorAgent extends Agent {
             template.addServices(serviceDescription);
             try {
                 DFAgentDescription[] result = DFService.search(myAgent, template);
-                ArrayList<AID> negotiatingAgents = new ArrayList<AID>();
+                negotiatingAgents = new ArrayList<AID>();
                 for (int i = 0; i < result.length; i++) {
                     negotiatingAgents.add(result[i].getName());
                 }
