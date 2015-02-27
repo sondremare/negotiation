@@ -5,11 +5,11 @@ import java.util.ArrayList;
 public class Utility {
 
     /** The buyers utility is multiplied with 2, because the most desired state is to own all wanted items */
-    public int getBuyersUtility(Item item) {
+    public static int getBuyersUtility(Item item) {
         return 2 * item.getValue();
     }
 
-    public int getSellersUtility(Item item) {
+    public static int getSellersUtility(Item item) {
         return item.getValue();
     }
 

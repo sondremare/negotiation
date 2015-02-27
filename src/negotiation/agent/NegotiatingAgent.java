@@ -13,6 +13,7 @@ import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import negotiation.util.Item;
 import negotiation.util.ItemFactory;
+import negotiation.util.Utility;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,7 +21,11 @@ import java.util.HashMap;
 public class NegotiatingAgent extends Agent {
     private ArrayList<Item> inventory;
     private ArrayList<Item> wishlist;
-    private double money = 2000;
+    private int money = 2000;
+    private boolean isBuyer = false;
+    private int timeSpent = 0;
+
+    public static int totalTimeAllowed = 10;
 
     protected void setup() {
         addBehaviour(new RegisterBehaviour());
@@ -80,6 +85,7 @@ public class NegotiatingAgent extends Agent {
             ACLMessage incomingMessage = myAgent.receive(messageTemplate);
 
             if (incomingMessage != null) {
+                isBuyer = true;
                 Item wantedItem = getNextWantedItem();
                 sendProposalToAll(wantedItem);
             }
@@ -146,21 +152,32 @@ public class NegotiatingAgent extends Agent {
             ACLMessage incomingMessage = myAgent.receive(messageTemplate);
 
             if (incomingMessage != null) {
+                timeSpent++;
                 String[] proposalContent = incomingMessage.getContent().split(":");
                 Item wantedItem = getItemFromInventory(proposalContent[0]);
                 int proposedPrice = Integer.parseInt(proposalContent[1]);
                 if (wantedItem != null) {
                     ACLMessage returnMessage = null;
-                    int proposalUtility = calcUtility(poposedPrice);
-                    int newProposalUtility = createNewProposalUtility(proposedPrice);
+                    int proposalUtility;
+                    int newProposalUtility;
+                    int newProposalPrice;
+                    if (isBuyer) {
+                        proposalUtility = Utility.getBuyersUtility(wantedItem);
+                        newProposalUtility = Utility.getBuyersNextBid(wishlist, money, wantedItem, timeSpent, totalTimeAllowed);
+                        newProposalPrice = convertUtilityToPrice(newProposalUtility);
+                    }
+                    else {
+                        proposalUtility = Utility.getSellersUtility(wantedItem);
+                        newProposalUtility = Utility.getSellersNextBid(wantedItem, timeSpent, totalTimeAllowed);
+                        newProposalPrice = convertUtilityToPrice(newProposalUtility);
+                    }
+
                     if (newProposalUtility < proposalUtility) {
                         returnMessage = createAcceptProposal(incomingMessage, proposedPrice);
                         //TODO start transaction
                     }
                     else {
-                        int newProposalPrice = convertUtilityToPrice(newProposalUtility);
                         returnMessage = createPropositionMessage(incomingMessage, newProposalPrice);
-
                     }
                     myAgent.send(returnMessage);
                 }
@@ -194,6 +211,7 @@ public class NegotiatingAgent extends Agent {
             responseMessage.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
             String nameOfItem = incomingMessage.getContent().split(":")[0];
             responseMessage.setContent(nameOfItem + ":" + acceptablePrice);
+            //TODO set isBuyer = false; somewhere in the code! AND set int timeSpent = 0;
             return responseMessage;
         }
     }
@@ -334,7 +352,7 @@ public class NegotiatingAgent extends Agent {
             ArrayList<Item> itemList = new ArrayList<Item>();
             for (String itemInfo : messageContent.split(",")) {
                 String[] separatedItemInfo = itemInfo.split(":");
-                Item itemCopy = new Item(separatedItemInfo[0], Double.parseDouble(separatedItemInfo[1]));
+                Item itemCopy = new Item(separatedItemInfo[0], Integer.parseInt(separatedItemInfo[1]));
                 itemList.add(itemCopy);
             }
             return itemList;
