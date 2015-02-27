@@ -251,7 +251,7 @@ public class NegotiatingAgent extends Agent {
         }
     }
 
-    private class AcquireWantedItemsBehaviour extends Behaviour {
+    private class GetInventoryInfoBehaviour extends Behaviour {
 
         private int counter =  0;
         private boolean done = false;
@@ -277,11 +277,7 @@ public class NegotiatingAgent extends Agent {
                         counter++;
                     }
                     break;
-                case(3):
-                    startBargainingForWantedItems();
-                    counter++;
-                    break;
-                case (4):
+                case (3):
                     done = true;
                     break;
             }
@@ -358,46 +354,9 @@ public class NegotiatingAgent extends Agent {
             return itemList;
         }
 
-        private void startBargainingForWantedItems() {
-            ArrayList<Item> itemList;
-            for (AID otherAgentID : agentInventoryMap.keySet()) {
-                itemList = agentInventoryMap.get(otherAgentID);
-                for (Item item : itemList) {
-                    for (Item wantedItem : wishlist) {
-                        if (item.getName().equals(wantedItem.getName()) && !otherAgentID.equals(myAgent.getAID())) {
-                            myAgent.addBehaviour(new BargainingBehaviour(wantedItem, otherAgentID));
-                        }
-                    }
-                }
-            }
-        }
-
         @Override
         public boolean done() {
             return done;
-        }
-    }
-    // END OF AcquireWantedItemsBehaviour
-
-    private class BargainingBehaviour extends Behaviour {
-
-        private Item bargainingItem;
-        private AID otherAgentID;
-
-        public BargainingBehaviour(Item item, AID otherAgentID) {
-            this.bargainingItem = item;
-            this.otherAgentID = otherAgentID;
-
-        }
-
-        @Override
-        public void action() {
-            System.out.println("Agent " + myAgent.getLocalName() + " is bargaining for " + bargainingItem.getName() + " with agent " + otherAgentID.getLocalName());
-        }
-
-        @Override
-        public boolean done() {
-            return false; //TODO MUST BE CHANGED!
         }
     }
 }
