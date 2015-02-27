@@ -7,15 +7,15 @@ import java.util.*;
 public class ItemFactory {
     private static int MIN_PER_AGENT = 2;
     private static int MAX_PER_AGENT = 4;
-    private static double MIN_ITEM_VALUE = 100;
-    private static double MAX_ITEM_VALUE = 1000;
+    private static int MIN_ITEM_VALUE = 500;
+    private static int MAX_ITEM_VALUE = 1000;
 
     public static ArrayList<Item> createItems(ArrayList<AID> agents) {
         ArrayList<Item> itemList = new ArrayList<Item>();
         Random random = new Random();
         int numberOfItemsToGenerate = (random.nextInt((MAX_PER_AGENT - MIN_PER_AGENT) + 1) + MIN_PER_AGENT) * agents.size();
         for (int i = 0; i < numberOfItemsToGenerate; i++) {
-            double value = MIN_ITEM_VALUE + (MAX_ITEM_VALUE - MIN_ITEM_VALUE) * random.nextDouble();
+            int value = random.nextInt((MAX_ITEM_VALUE - MIN_ITEM_VALUE) + 1) + MIN_ITEM_VALUE;
             Item item = new Item("Item"+i, value);
             itemList.add(item);
         }
@@ -93,6 +93,6 @@ public class ItemFactory {
 
     public static Item parseItem(String item) {
         String[] itemValues = item.split(":");
-        return new Item(itemValues[0], Double.parseDouble(itemValues[1]));
+        return new Item(itemValues[0], Integer.parseInt(itemValues[1]));
     }
 }

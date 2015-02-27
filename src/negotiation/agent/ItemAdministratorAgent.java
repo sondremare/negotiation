@@ -2,19 +2,22 @@ package negotiation.agent;
 
 import jade.core.AID;
 import jade.core.Agent;
+import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
-import negotiation.util.Item;
+import jade.lang.acl.MessageTemplate;
 import negotiation.util.ItemFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 
 public class ItemAdministratorAgent extends Agent {
+
+    private ArrayList<AID> negotiatingAgents;
+    private int counter = 0;
 
     protected void setup() {
         addBehaviour(new FindNegotiatingAgents());
@@ -41,7 +44,7 @@ public class ItemAdministratorAgent extends Agent {
                 for (int i = 0; i < result.length; i++) {
                     negotiatingAgents.add(result[i].getName());
                 }
-                myAgent.addBehaviour(new SendItemListsToAgents(negotiatingAgents));
+                myAgent.addBehaviour(new SendItemListsToAgents());
 
             } catch (FIPAException e) {
                 e.printStackTrace();
@@ -50,12 +53,6 @@ public class ItemAdministratorAgent extends Agent {
     }
 
     private class SendItemListsToAgents extends OneShotBehaviour {
-
-        private ArrayList<AID> negotiatingAgents;
-
-        public SendItemListsToAgents(ArrayList<AID> negotiatingAgents) {
-            this.negotiatingAgents = negotiatingAgents;
-        }
 
         @Override
         public void action() {
@@ -66,6 +63,35 @@ public class ItemAdministratorAgent extends Agent {
                 message.setContent(agentItems[i]);
                 message.setConversationId("ItemList");
                 myAgent.send(message);
+            }
+            addBehaviour(new ControlNegotiationsBehaviour());
+        }
+    }
+
+    private class ControlNegotiationsBehaviour extends CyclicBehaviour {
+
+        public void sendStartMessageToAgent(AID agent) {
+            ACLMessage message = new ACLMessage(ACLMessage.INFORM);
+            message.addReceiver(agent);
+            message.setConversationId("Negotiation");
+            myAgent.send(message);
+        }
+
+        @Override
+        public void action() {
+            switch (counter) {
+                case 0:
+                    sendStartMessageToAgent(negotiatingAgents.get(counter % negotiatingAgents.size()));
+                    counter++;
+                    break;
+                default:
+                    MessageTemplate messageTemplate = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM),
+                            MessageTemplate.MatchConversationId("NegotiationsEnded"));
+                    if (myAgent.receive(messageTemplate) != null) {
+                        sendStartMessageToAgent(negotiatingAgents.get(counter % negotiatingAgents.size()));
+                        counter++;
+                        break;
+                    }
             }
         }
     }

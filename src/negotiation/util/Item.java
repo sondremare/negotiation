@@ -2,9 +2,9 @@ package negotiation.util;
 
 public class Item {
     private String name;
-    private double value;
+    private int value;
 
-    public Item(String name, double value) {
+    public Item(String name, int value) {
         this.name = name;
         this.value = value;
     }
@@ -13,10 +13,9 @@ public class Item {
         return name;
     }
 
-    public double getValue() {
+    public int getValue() {
         return value;
     }
-
 
     public String toString() {
         return name;
