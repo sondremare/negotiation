@@ -26,7 +26,9 @@ public class NegotiatingAgent extends Agent {
         addBehaviour(new RegisterBehaviour());
         addBehaviour(new ReceiveItemListBehaviour());
         addBehaviour(new AcquireWantedItemsBehaviour());
-        addBehaviour(new RespondeToInventoryRequestBehaviour());
+        addBehaviour(new RespondToInventoryRequestBehaviour());
+
+        addBehaviour(new RespondToProposalBehaviour());
 
     }
 
@@ -67,7 +69,137 @@ public class NegotiatingAgent extends Agent {
         }
     }
 
-    private class RespondeToInventoryRequestBehaviour extends CyclicBehaviour {
+    private class StartNegotiationBehaviour extends CyclicBehaviour {
+
+        ArrayList<AID> agentList = new ArrayList<AID>();
+
+        @Override
+        public void action() {
+            MessageTemplate messageTemplate = MessageTemplate.and(MessageTemplate.MatchConversationId("Negotiation"),
+                    MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+            ACLMessage incomingMessage = myAgent.receive(messageTemplate);
+
+            if (incomingMessage != null) {
+                Item wantedItem = getNextWantedItem();
+                sendProposalToAll(wantedItem);
+            }
+            else {
+                block();
+            }
+        }
+
+        private Item getNextWantedItem() {
+            for (Item wantedItem : wishlist) {
+                boolean ownsItem = false;
+                for (Item inventoryItem : inventory) {
+                    ownsItem = ownsItem || (wantedItem.getName() == inventoryItem.getName());
+                }
+                if (!ownsItem) {
+                    return wantedItem;
+                }
+            }
+            return null;
+        }
+
+
+        private void sendProposalToAll(Item wantedItem) {
+            findAllOtherNegotiators();
+            ACLMessage proposalMessage = new ACLMessage(ACLMessage.PROPOSE);
+            for (AID agentID : agentList) {
+                if (agentID != myAgent.getAID()) {
+                    proposalMessage.addReceiver(agentID);
+                }
+            }
+            proposalMessage.setConversationId("proposal on item");
+            proposalMessage.setContent(wantedItem.getName() + ":" + 0);
+            myAgent.send(proposalMessage);
+        }
+
+        private void findAllOtherNegotiators() {
+            DFAgentDescription template = new DFAgentDescription();
+            ServiceDescription sd = new ServiceDescription();
+            sd.setType("negotiator");
+            try
+            {
+                DFAgentDescription[] result = DFService.search(myAgent, template);
+                for (int i = 0; i < result.length; ++i)
+                {
+                    if (result[i].getName() != myAgent.getAID()) {
+                        agentList.add(result[i].getName());
+                    }
+                }
+            }
+            catch (FIPAException fe) {
+                fe.printStackTrace();
+            }
+        }
+    }
+
+
+
+    private class RespondToProposalBehaviour extends CyclicBehaviour {
+
+        @Override
+        public void action() {
+            MessageTemplate messageTemplate = MessageTemplate.and(MessageTemplate.MatchConversationId("proposal on item"),
+                    MessageTemplate.MatchPerformative(ACLMessage.PROPOSE));
+            ACLMessage incomingMessage = myAgent.receive(messageTemplate);
+
+            if (incomingMessage != null) {
+                String[] proposalContent = incomingMessage.getContent().split(":");
+                Item wantedItem = getItemFromInventory(proposalContent[0]);
+                int proposedPrice = Integer.parseInt(proposalContent[1]);
+                if (wantedItem != null) {
+                    ACLMessage returnMessage = null;
+                    int proposalUtility = calcUtility(poposedPrice);
+                    int newProposalUtility = createNewProposalUtility(proposedPrice);
+                    if (newProposalUtility < proposalUtility) {
+                        returnMessage = createAcceptProposal(incomingMessage, proposedPrice);
+                        //TODO start transaction
+                    }
+                    else {
+                        int newProposalPrice = convertUtilityToPrice(newProposalUtility);
+                        returnMessage = createPropositionMessage(incomingMessage, newProposalPrice);
+
+                    }
+                    myAgent.send(returnMessage);
+                }
+            }
+            else {
+                block();
+            }
+        }
+
+        private Item getItemFromInventory(String wantedItemName) {
+            for (Item item : inventory) {
+                if (item.getName().equals(wantedItemName)) {
+                    return item;
+                }
+            }
+            return null;
+        }
+
+        private ACLMessage createPropositionMessage(ACLMessage incomingMessage, int newProposalPrice)
+        {
+            ACLMessage responseMessage = incomingMessage.createReply();
+            String nameOfItem = incomingMessage.getContent().split(":")[0];
+            responseMessage.setContent(nameOfItem + ":" + newProposalPrice);
+            responseMessage.setPerformative(ACLMessage.PROPOSE);
+            responseMessage.setConversationId("proposal on item");
+            return responseMessage;
+        }
+
+        private ACLMessage createAcceptProposal(ACLMessage incomingMessage, int acceptablePrice) {
+            ACLMessage responseMessage = incomingMessage.createReply();
+            responseMessage.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
+            String nameOfItem = incomingMessage.getContent().split(":")[0];
+            responseMessage.setContent(nameOfItem + ":" + acceptablePrice);
+            return responseMessage;
+        }
+    }
+
+
+    private class RespondToInventoryRequestBehaviour extends CyclicBehaviour {
 
         @Override
         public void action() {
@@ -247,7 +379,7 @@ public class NegotiatingAgent extends Agent {
 
         @Override
         public boolean done() {
-            return true; //TODO MUST BE CHANGED!
+            return false; //TODO MUST BE CHANGED!
         }
     }
 }
