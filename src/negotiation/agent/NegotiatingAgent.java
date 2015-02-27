@@ -157,6 +157,7 @@ public class NegotiatingAgent extends Agent {
                 String[] proposalContent = incomingMessage.getContent().split(":");
                 Item wantedItem = getItemFromInventory(proposalContent[0]);
                 int proposedPrice = Integer.parseInt(proposalContent[1]);
+                //TODO fix wantedItem for Buyers. Buyers need the original price. Not the proposed price
                 if (wantedItem != null) {
                     ACLMessage returnMessage = null;
                     int proposalUtility;
@@ -165,11 +166,13 @@ public class NegotiatingAgent extends Agent {
                     if (isBuyer) {
                         proposalUtility = Utility.getBuyersUtility(wantedItem, proposedPrice);
                         newProposalPrice = Utility.getBuyersNextBid(wishlist, money, wantedItem, timeSpent, totalTimeAllowed);
+                        System.out.println("buyer newProposalPrice: "+newProposalPrice);
                         newProposalUtility = Utility.getBuyersUtility(wantedItem, newProposalPrice);
                     }
                     else {
                         proposalUtility = Utility.getSellersUtility(wantedItem);
                         newProposalPrice = Utility.getSellersNextBid(wantedItem, timeSpent, totalTimeAllowed);
+                        System.out.println("seller newProposalPrice: "+newProposalPrice);
                         newProposalUtility = Utility.convertPriceToSellersUtility(newProposalPrice);
                     }
 
