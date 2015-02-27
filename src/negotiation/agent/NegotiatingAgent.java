@@ -162,14 +162,14 @@ public class NegotiatingAgent extends Agent {
                     int newProposalUtility;
                     int newProposalPrice;
                     if (isBuyer) {
-                        proposalUtility = Utility.getBuyersUtility(wantedItem);
-                        newProposalUtility = Utility.getBuyersNextBid(wishlist, money, wantedItem, timeSpent, totalTimeAllowed);
-                        newProposalPrice = convertUtilityToPrice(newProposalUtility);
+                        proposalUtility = Utility.getBuyersUtility(wantedItem, proposedPrice);
+                        newProposalPrice = Utility.getBuyersNextBid(wishlist, money, wantedItem, timeSpent, totalTimeAllowed);
+                        newProposalUtility = Utility.convertPriceToBuyersUtility(newProposalPrice);
                     }
                     else {
                         proposalUtility = Utility.getSellersUtility(wantedItem);
-                        newProposalUtility = Utility.getSellersNextBid(wantedItem, timeSpent, totalTimeAllowed);
-                        newProposalPrice = convertUtilityToPrice(newProposalUtility);
+                        newProposalPrice = Utility.getSellersNextBid(wantedItem, timeSpent, totalTimeAllowed);
+                        newProposalUtility = Utility.convertPriceToSellersUtility(newProposalPrice);
                     }
 
                     if (newProposalUtility < proposalUtility) {

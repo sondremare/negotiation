@@ -5,12 +5,20 @@ import java.util.ArrayList;
 public class Utility {
 
     /** The buyers utility is multiplied with 2, because the most desired state is to own all wanted items */
-    public static int getBuyersUtility(Item item) {
-        return 2 * item.getValue();
+    public static int getBuyersUtility(Item item, int bid) {
+        return 2 * item.getValue() - bid;
     }
 
     public static int getSellersUtility(Item item) {
         return item.getValue();
+    }
+
+    public static int convertPriceToBuyersUtility(int price) {
+        return price * 2;
+    }
+
+    public static int convertPriceToSellersUtility(int price) {
+        return price;
     }
 
     /** Gets the buyers next bid based on a conceeder strategy **/
