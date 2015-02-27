@@ -209,11 +209,12 @@ public class NegotiatingAgent extends Agent {
         }
 
         private void startBargainingForWantedItems() {
+            ArrayList<Item> itemList;
             for (AID otherAgentID : agentInventoryMap.keySet()) {
-                ArrayList<Item> itemList = agentInventoryMap.get(otherAgentID);
+                itemList = agentInventoryMap.get(otherAgentID);
                 for (Item item : itemList) {
                     for (Item wantedItem : wishlist) {
-                        if (item.getName().compareTo(wantedItem.getName()) == 1) {
+                        if (item.getName().equals(wantedItem.getName()) && !otherAgentID.equals(myAgent.getAID())) {
                             myAgent.addBehaviour(new BargainingBehaviour(wantedItem, otherAgentID));
                         }
                     }
