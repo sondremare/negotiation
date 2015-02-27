@@ -30,7 +30,7 @@ public class NegotiatingAgent extends Agent {
     protected void setup() {
         addBehaviour(new RegisterBehaviour());
         addBehaviour(new ReceiveItemListBehaviour());
-        addBehaviour(new AcquireWantedItemsBehaviour());
+        addBehaviour(new GetInventoryInfoBehaviour());
         addBehaviour(new RespondToInventoryRequestBehaviour());
 
         addBehaviour(new RespondToProposalBehaviour());
