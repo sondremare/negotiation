@@ -30,9 +30,9 @@ public class Utility {
         double maxBidFactor = ((double)remainingMoney / recommendedPriceForAllWishedItems);
         double buyersMinimumBid = 0;
         double buyersMaximumBid = maxBidFactor * item.getValue();
-        System.out.println("RemainingToBuy: "+recommendedPriceForAllWishedItems);
-        System.out.println("RemainingMoney: "+remainingMoney);
-        System.out.println("Buyers maxBid: "+buyersMaximumBid);
+        //System.out.println("RemainingToBuy: "+recommendedPriceForAllWishedItems);
+        //System.out.println("RemainingMoney: "+remainingMoney);
+        //System.out.println("Buyers maxBid: "+buyersMaximumBid);
         return (int)(buyersMinimumBid + (buyersMaximumBid - buyersMinimumBid) * Math.pow(((double)time/totalTime), 1/Math.E));
     }
 
