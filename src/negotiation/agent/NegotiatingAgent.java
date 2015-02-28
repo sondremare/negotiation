@@ -208,9 +208,9 @@ public class NegotiatingAgent extends Agent {
                             System.out.println("Time spent: "+timeSpent+", of total: "+totalTimeAllowed);
                         }
                         else {
-                            proposalUtility = Utility.getSellersUtility(wantedItem);
+                            proposalUtility = Utility.getSellersUtility(proposedPrice);
                             newProposalPrice = Utility.getSellersNextBid(wantedItem, timeSpent, totalTimeAllowed);
-                            newProposalUtility = Utility.convertPriceToSellersUtility(newProposalPrice);
+                            newProposalUtility = Utility.getSellersUtility(newProposalPrice);
                             System.out.println("--------------SELLER: "+myAgent.getLocalName()+"------------------");
                             System.out.println("Item name: "+wantedItem.getName());
                             System.out.println("Retail price: "+wantedItem.getValue());
