@@ -99,7 +99,7 @@ public class NegotiatingAgent extends Agent {
             for (Item wantedItem : wishlist) {
                 boolean ownsItem = false;
                 for (Item inventoryItem : inventory) {
-                    ownsItem = ownsItem || (wantedItem.getName() == inventoryItem.getName());
+                    ownsItem = ownsItem || (wantedItem.getName().equals(inventoryItem.getName()));
                 }
                 if (!ownsItem) {
                     return wantedItem;
@@ -113,12 +113,13 @@ public class NegotiatingAgent extends Agent {
             findAllOtherNegotiators();
             ACLMessage proposalMessage = new ACLMessage(ACLMessage.PROPOSE);
             for (AID agentID : agentList) {
-                if (agentID != myAgent.getAID()) {
+                if (!agentID.equals(myAgent.getAID())) {
                     proposalMessage.addReceiver(agentID);
                 }
             }
             proposalMessage.setConversationId("proposal on item");
             proposalMessage.setContent(wantedItem.getName() + ":" + 0);
+            System.out.println(myAgent.getLocalName()+ " sending proposal to all for item: "+wantedItem.getName());
             myAgent.send(proposalMessage);
         }
 
@@ -155,9 +156,8 @@ public class NegotiatingAgent extends Agent {
             if (incomingMessage != null) {
                 timeSpent++;
                 String[] proposalContent = incomingMessage.getContent().split(":");
-                Item wantedItem = getItemFromInventory(proposalContent[0]);
+                Item wantedItem = isBuyer ? getItemFromWishList(proposalContent[0]) : getItemFromInventory(proposalContent[0]);
                 int proposedPrice = Integer.parseInt(proposalContent[1]);
-                //TODO fix wantedItem for Buyers. Buyers need the original price. Not the proposed price
                 if (wantedItem != null) {
                     ACLMessage returnMessage = null;
                     int proposalUtility;
@@ -166,14 +166,22 @@ public class NegotiatingAgent extends Agent {
                     if (isBuyer) {
                         proposalUtility = Utility.getBuyersUtility(wantedItem, proposedPrice);
                         newProposalPrice = Utility.getBuyersNextBid(wishlist, money, wantedItem, timeSpent, totalTimeAllowed);
-                        System.out.println("buyer newProposalPrice: "+newProposalPrice);
                         newProposalUtility = Utility.getBuyersUtility(wantedItem, newProposalPrice);
+                        System.out.println("--------------BUYER: "+myAgent.getLocalName()+"------------------");
+                        System.out.println("Retail price: "+wantedItem.getValue());
+                        System.out.println("Sellers proposed price: "+proposedPrice);
+                        System.out.println("Buyers new proposal price: "+newProposalPrice);
+                        System.out.println("Time spent: "+timeSpent+", of total: "+totalTimeAllowed);
                     }
                     else {
                         proposalUtility = Utility.getSellersUtility(wantedItem);
                         newProposalPrice = Utility.getSellersNextBid(wantedItem, timeSpent, totalTimeAllowed);
-                        System.out.println("seller newProposalPrice: "+newProposalPrice);
                         newProposalUtility = Utility.convertPriceToSellersUtility(newProposalPrice);
+                        System.out.println("--------------SELLER: "+myAgent.getLocalName()+"------------------");
+                        System.out.println("Retail price: "+wantedItem.getValue());
+                        System.out.println("Buyers proposed price: "+proposedPrice);
+                        System.out.println("Sellers new proposal price: "+newProposalPrice);
+                        System.out.println("Time spent: "+timeSpent+", of total: "+totalTimeAllowed);
                     }
 
                     if (newProposalUtility < proposalUtility) {
@@ -182,7 +190,6 @@ public class NegotiatingAgent extends Agent {
                         //TODO start transaction
                     }
                     else {
-                        System.out.println(myAgent.getAID() + ", price: "+newProposalPrice);
                         returnMessage = createPropositionMessage(incomingMessage, newProposalPrice);
                     }
                     myAgent.send(returnMessage);
@@ -195,6 +202,15 @@ public class NegotiatingAgent extends Agent {
 
         private Item getItemFromInventory(String wantedItemName) {
             for (Item item : inventory) {
+                if (item.getName().equals(wantedItemName)) {
+                    return item;
+                }
+            }
+            return null;
+        }
+
+        private Item getItemFromWishList(String wantedItemName) {
+            for (Item item : wishlist) {
                 if (item.getName().equals(wantedItemName)) {
                     return item;
                 }

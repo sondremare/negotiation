@@ -27,16 +27,19 @@ public class Utility {
         for (Item wishedItem : wishList) {
             recommendedPriceForAllWishedItems += wishedItem.getValue();
         }
-        double maxBidFactor = ((double)recommendedPriceForAllWishedItems / remainingMoney);
+        double maxBidFactor = ((double)remainingMoney / recommendedPriceForAllWishedItems);
         double buyersMinimumBid = 0;
         double buyersMaximumBid = maxBidFactor * item.getValue();
-        return (int)(buyersMinimumBid + (buyersMaximumBid - buyersMinimumBid) * Math.pow((double)(time/totalTime), 1/Math.E));
+        System.out.println("RemainingToBuy: "+recommendedPriceForAllWishedItems);
+        System.out.println("RemainingMoney: "+remainingMoney);
+        System.out.println("Buyers maxBid: "+buyersMaximumBid);
+        return (int)(buyersMinimumBid + (buyersMaximumBid - buyersMinimumBid) * Math.pow(((double)time/totalTime), 1/Math.E));
     }
 
     /** Gets the sellers next bid based on a boulware strategy **/
     public static int getSellersNextBid(Item item, int time, int totalTime) {
         int buyersMinimumBid = (int)(0.5 * item.getValue());
         int buyersMaximumBid = 2 * item.getValue();
-        return (int)(buyersMinimumBid + (buyersMaximumBid - buyersMinimumBid) * Math.pow(1 - (double)(time/totalTime), 1/Math.E));
+        return (int)(buyersMinimumBid + (buyersMaximumBid - buyersMinimumBid) * Math.pow(1 - ((double)time/totalTime), 1/Math.E));
     }
 }
