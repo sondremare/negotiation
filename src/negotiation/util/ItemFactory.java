@@ -5,9 +5,9 @@ import jade.core.AID;
 import java.util.*;
 
 public class ItemFactory {
-    private static int MIN_PER_AGENT = 2;
-    private static int MAX_PER_AGENT = 4;
-    private static int MIN_ITEM_VALUE = 500;
+    private static int MIN_PER_AGENT = 10;
+    private static int MAX_PER_AGENT = 20;
+    private static int MIN_ITEM_VALUE = 200;
     private static int MAX_ITEM_VALUE = 1000;
 
     public static ArrayList<Item> createItems(ArrayList<AID> agents) {

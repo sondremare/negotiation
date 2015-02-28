@@ -21,7 +21,7 @@ import java.util.HashMap;
 public class NegotiatingAgent extends Agent {
     private ArrayList<Item> inventory;
     private ArrayList<Item> wishlist;
-    private int money = 200;
+    private int money = 800;
     private boolean isBuyer = false;
     private int timeSpent = 0;
     private AID administrator;
@@ -186,11 +186,15 @@ public class NegotiatingAgent extends Agent {
                 timeSpent++;
                 String[] proposalContent = incomingMessage.getContent().split(":");
                 Item wantedItem = isBuyer ? getItemFromWishList(proposalContent[0]) : getItemFromInventory(proposalContent[0]);
-                int proposedPrice = Integer.parseInt(proposalContent[1]);
                 if (incomingMessage.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
+                    int proposedPrice = Integer.parseInt(proposalContent[1]);
                     performTransaction(wantedItem, proposedPrice, isBuyer);
                     endNegotiations();
+                } else if (incomingMessage.getPerformative() == ACLMessage.REFUSE) {
+                    System.out.println(myAgent.getLocalName() + " got a refusal from " + incomingMessage.getSender().getLocalName());
+                    endNegotiations();
                 } else {
+                    int proposedPrice = Integer.parseInt(proposalContent[1]);
                     if (wantedItem != null) {
                         ACLMessage returnMessage;
                         int proposalUtility;
@@ -226,7 +230,9 @@ public class NegotiatingAgent extends Agent {
                             endNegotiations();                        }
                         else if (timeSpent >= totalTimeAllowed) {
                             System.out.println("TIMEOUT");
-                            returnMessage = createRefuseMessage(incomingMessage, proposedPrice);
+                            //int nonAcceptablePrice = isBuyer ? Utility.getBuyersNextBid(wishlist, money, wantedItem, timeSpent-1, totalTimeAllowed) : Utility.getSellersNextBid(wantedItem, timeSpent-1, totalTimeAllowed);
+                            //System.out.println("With non acceptable price is: " + nonAcceptablePrice);
+                            returnMessage = createRefuseMessage(incomingMessage);
                             endNegotiations();
                         }
                         else {
@@ -306,11 +312,11 @@ public class NegotiatingAgent extends Agent {
             return responseMessage;
         }
 
-        private ACLMessage createRefuseMessage(ACLMessage incomingMessage, int oldProposalPrice) {
+        private ACLMessage createRefuseMessage(ACLMessage incomingMessage) {
             ACLMessage responseMessage = incomingMessage.createReply();
             responseMessage.setPerformative(ACLMessage.REFUSE);
             String nameOfItem = incomingMessage.getContent().split(":")[0];
-            responseMessage.setContent(nameOfItem + ":" + oldProposalPrice);
+            responseMessage.setContent(nameOfItem + ":");
             return responseMessage;
         }
 
