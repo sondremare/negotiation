@@ -99,6 +99,8 @@ public class ItemAdministratorAgent extends Agent {
                             //TODO HANDLE WINNING AGENTS
                         }
 
+                    } else {
+
                     }
             }
         }

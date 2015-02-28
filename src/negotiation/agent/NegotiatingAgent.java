@@ -144,21 +144,20 @@ public class NegotiatingAgent extends Agent {
             }
             proposalMessage.setConversationId("proposal on item");
             proposalMessage.setContent(wantedItem.getName() + ":" + 0);
-            System.out.println(myAgent.getLocalName()+ " sending proposal to all for item: "+wantedItem.getName());
+            System.out.println(myAgent.getLocalName() + " sending proposal to all for item: " + wantedItem.getName());
             myAgent.send(proposalMessage);
         }
 
+        //TODO This method is duplicated for two different behaviours 
         private void findAllOtherNegotiators() {
             DFAgentDescription template = new DFAgentDescription();
             ServiceDescription sd = new ServiceDescription();
             sd.setType("negotiator");
-            try
-            {
+            try {
                 DFAgentDescription[] result = DFService.search(myAgent, template);
-                for (int i = 0; i < result.length; ++i)
-                {
-                    if (result[i].getName() != myAgent.getAID()) {
-                        agentList.add(result[i].getName());
+                for (DFAgentDescription aResult : result) {
+                    if (aResult.getName() != myAgent.getAID()) {
+                        agentList.add(aResult.getName());
                     }
                 }
             }
@@ -193,7 +192,7 @@ public class NegotiatingAgent extends Agent {
                     timeSpent = 0;
                 } else {
                     if (wantedItem != null) {
-                        ACLMessage returnMessage = null;
+                        ACLMessage returnMessage;
                         int proposalUtility;
                         int newProposalUtility;
                         int newProposalPrice;
@@ -293,7 +292,6 @@ public class NegotiatingAgent extends Agent {
             responseMessage.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
             String nameOfItem = incomingMessage.getContent().split(":")[0];
             responseMessage.setContent(nameOfItem + ":" + acceptablePrice);
-            //TODO set isBuyer = false; somewhere in the code! AND set int timeSpent = 0;
             return responseMessage;
         }
     }
@@ -366,10 +364,7 @@ public class NegotiatingAgent extends Agent {
         }
 
         private boolean properlyInitialized() {
-            if (inventory == null) {
-                return false;
-            }
-            return true;
+            return inventory != null;
         }
 
         private void requestAllInventories() {
@@ -383,11 +378,10 @@ public class NegotiatingAgent extends Agent {
             sd.setType("negotiator");
             try
             {
-                DFAgentDescription[] result = DFService.search(myAgent, template);
-                for (int i = 0; i < result.length; ++i)
-                {
-                    if (result[i].getName() != myAgent.getAID()) {
-                        agentInventoryMap.put(result[i].getName(), null);
+                DFAgentDescription[] searchResults = DFService.search(myAgent, template);
+                for (DFAgentDescription searchResult : searchResults) {
+                    if (searchResult.getName() != myAgent.getAID()) {
+                        agentInventoryMap.put(searchResult.getName(), null);
                     }
                 }
             }
