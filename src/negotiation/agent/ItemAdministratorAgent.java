@@ -97,10 +97,10 @@ public class ItemAdministratorAgent extends Agent {
                             break;
                         } else {
                             //TODO HANDLE WINNING AGENTS
+
                         }
-
                     } else {
-
+                        block();
                     }
             }
         }

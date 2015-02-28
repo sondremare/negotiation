@@ -21,7 +21,7 @@ import java.util.HashMap;
 public class NegotiatingAgent extends Agent {
     private ArrayList<Item> inventory;
     private ArrayList<Item> wishlist;
-    private int money = 2000;
+    private int money = 200;
     private boolean isBuyer = false;
     private int timeSpent = 0;
     private AID administrator;
@@ -173,9 +173,17 @@ public class NegotiatingAgent extends Agent {
 
         @Override
         public void action() {
-            MessageTemplate messageTemplate = MessageTemplate.and(MessageTemplate.MatchConversationId("proposal on item"),
-                    MessageTemplate.or(MessageTemplate.MatchPerformative(ACLMessage.PROPOSE),
-                            MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL)));
+            try {
+                Thread.sleep(30);
+            } catch(Exception e) {
+
+            }
+            MessageTemplate conversationIDMatch = MessageTemplate.MatchConversationId("proposal on item");
+            MessageTemplate proposeOrAccept = MessageTemplate.or(MessageTemplate.MatchPerformative(ACLMessage.PROPOSE),
+                    MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL));
+            MessageTemplate proposeOrAcceptOrCancel = MessageTemplate.or(proposeOrAccept, MessageTemplate.MatchPerformative(ACLMessage.REFUSE));
+
+            MessageTemplate messageTemplate = MessageTemplate.and(conversationIDMatch, proposeOrAcceptOrCancel);
             ACLMessage incomingMessage = myAgent.receive(messageTemplate);
 
             if (incomingMessage != null) {
@@ -185,11 +193,7 @@ public class NegotiatingAgent extends Agent {
                 int proposedPrice = Integer.parseInt(proposalContent[1]);
                 if (incomingMessage.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
                     performTransaction(wantedItem, proposedPrice, isBuyer);
-                    if (isBuyer) {
-                        sendNegotiationsEndedMessage();
-                        isBuyer = false;
-                    }
-                    timeSpent = 0;
+                    endNegotiations();
                 } else {
                     if (wantedItem != null) {
                         ACLMessage returnMessage;
@@ -218,19 +222,23 @@ public class NegotiatingAgent extends Agent {
                         }
 
                         if (newProposalUtility < proposalUtility) {
+                            System.out.println("This agent was about to propose: " + newProposalPrice + " with utility: " + newProposalUtility + " Both agree to the price: " + proposedPrice + " with utility: " + proposalUtility);
                             returnMessage = createAcceptProposal(incomingMessage, proposedPrice);
                             performTransaction(wantedItem, proposedPrice, isBuyer);
-                            if (isBuyer) {
-                                sendNegotiationsEndedMessage();
-                                isBuyer = false;
-                            }
-                            timeSpent = 0;
+                            endNegotiations();
+                        }
+                        else if (timeSpent >= totalTimeAllowed) {
+                            System.out.println("TIMEOUT");
+                            returnMessage = createRefuseMessage(incomingMessage, proposedPrice);
+                            endNegotiations();
                         }
                         else {
-                            //TODO handle failed negotiations
                             returnMessage = createPropositionMessage(incomingMessage, newProposalPrice);
                         }
                         myAgent.send(returnMessage);
+                    }
+                    else {
+                        timeSpent = 0;
                     }
                 }
             }
@@ -243,7 +251,7 @@ public class NegotiatingAgent extends Agent {
             ACLMessage message = new ACLMessage(ACLMessage.INFORM);
             message.setConversationId("NegotiationsEnded");
             message.addReceiver(administrator);
-            System.out.println("Sending negotiations ended to: "+administrator);
+            System.out.println("Sending negotiations ended to: "+administrator.getLocalName());
             myAgent.send(message);
         }
 
@@ -293,6 +301,22 @@ public class NegotiatingAgent extends Agent {
             String nameOfItem = incomingMessage.getContent().split(":")[0];
             responseMessage.setContent(nameOfItem + ":" + acceptablePrice);
             return responseMessage;
+        }
+
+        private ACLMessage createRefuseMessage(ACLMessage incomingMessage, int oldProposalPrice) {
+            ACLMessage responseMessage = incomingMessage.createReply();
+            responseMessage.setPerformative(ACLMessage.REFUSE);
+            String nameOfItem = incomingMessage.getContent().split(":")[0];
+            responseMessage.setContent(nameOfItem + ":" + oldProposalPrice);
+            return responseMessage;
+        }
+
+        private void endNegotiations() {
+            if (isBuyer) {
+                sendNegotiationsEndedMessage();
+                isBuyer = false;
+            }
+            timeSpent = 0;
         }
     }
 
