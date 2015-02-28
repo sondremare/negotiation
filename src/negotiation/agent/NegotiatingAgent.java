@@ -189,10 +189,6 @@ public class NegotiatingAgent extends Agent {
                 int proposedPrice = Integer.parseInt(proposalContent[1]);
                 if (incomingMessage.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
                     performTransaction(wantedItem, proposedPrice, isBuyer);
-                    Item nextWantedItem = getNextWantedItem();
-                    if (nextWantedItem == null) { //agent has completed its wishlist
-                        sendFinishedMessage();
-                    }
                     endNegotiations();
                 } else {
                     if (wantedItem != null) {
@@ -227,10 +223,6 @@ public class NegotiatingAgent extends Agent {
                             System.out.println("This agent was about to propose: " + newProposalPrice + " with utility: " + newProposalUtility + " Both agree to the price: " + proposedPrice + " with utility: " + proposalUtility);
                             returnMessage = createAcceptProposal(incomingMessage, proposedPrice);
                             performTransaction(wantedItem, proposedPrice, isBuyer);
-                            Item nextWantedItem = getNextWantedItem();
-                            if (nextWantedItem == null) { //agent has completed its wishlist
-                                sendFinishedMessage();
-                            }
                             endNegotiations();                        }
                         else if (timeSpent >= totalTimeAllowed) {
                             System.out.println("TIMEOUT");
@@ -323,8 +315,12 @@ public class NegotiatingAgent extends Agent {
         }
 
         private void endNegotiations() {
+            Item nextWantedItem = getNextWantedItem();
+            if (nextWantedItem == null) { //agent has completed its wishlist
+                sendFinishedMessage();
+            }
             if (isBuyer) {
-                sendNegotiationsEndedMessage();
+                sendNegotiationsEndedMessage(myAgent);
                 isBuyer = false;
             }
             timeSpent = 0;
