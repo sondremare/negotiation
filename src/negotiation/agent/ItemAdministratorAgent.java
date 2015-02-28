@@ -18,6 +18,9 @@ public class ItemAdministratorAgent extends Agent {
 
     private ArrayList<AID> negotiatingAgents;
     private int counter = 0;
+    private boolean oneAgentFinished = false;
+    private int maxMoney = Integer.MIN_VALUE;
+    private String winningAgent;
 
     protected void setup() {
         addBehaviour(new FindNegotiatingAgents());
@@ -90,13 +93,27 @@ public class ItemAdministratorAgent extends Agent {
                                     MessageTemplate.MatchConversationId("Finished")));
                     ACLMessage message = myAgent.receive(messageTemplate);
                     if (message != null) {
-                        if (message.getConversationId().equals("NegotiationsEnded")) {
-                            System.out.println("*********************************************NEXT ROUND **************************************************");
-                            sendStartMessageToAgent(negotiatingAgents.get(counter % negotiatingAgents.size()));
-                            counter++;
-                            break;
+                        if (message.getConversationId().equals("Finished")) {
+                            System.out.println("received finished message");
+                            oneAgentFinished = true;
+                            int agentsMoney = Integer.parseInt(message.getContent());
+                            if (agentsMoney > maxMoney) {
+                                maxMoney = agentsMoney;
+                                winningAgent = message.getSender().getLocalName();
+                            }
                         } else {
-                            //TODO HANDLE WINNING AGENTS
+                            if (counter % negotiatingAgents.size() == 0) { //new round starting
+                                if (oneAgentFinished) {
+                                    System.out.println(winningAgent+ " won the negotiations with "+maxMoney+" money.");
+                                    this.done();
+                                } else {
+                                    sendStartMessageToAgent(negotiatingAgents.get(counter % negotiatingAgents.size()));
+                                    counter++;
+                                }
+                            } else {
+                                sendStartMessageToAgent(negotiatingAgents.get(counter % negotiatingAgents.size()));
+                                counter++;
+                            }
 
                         }
                     } else {
