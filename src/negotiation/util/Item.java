@@ -17,6 +17,10 @@ public class Item {
         return value;
     }
 
+    public void setValue(int value) {
+        this.value = value;
+    }
+
     public String toString() {
         return name;
     }

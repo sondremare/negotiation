@@ -24,8 +24,17 @@ public class NegotiatingAgent extends Agent {
     private int money = 2000;
     private boolean isBuyer = false;
     private int timeSpent = 0;
+    private AID administrator;
 
     public static int totalTimeAllowed = 10;
+
+    private void substractMoney(int money) {
+        this.money -= money;
+    }
+
+    private void addMoney(int money) {
+        this.money += money;
+    }
 
     protected void setup() {
         addBehaviour(new RegisterBehaviour());
@@ -81,14 +90,24 @@ public class NegotiatingAgent extends Agent {
 
         @Override
         public void action() {
-            MessageTemplate messageTemplate = MessageTemplate.and(MessageTemplate.MatchConversationId("Negotiation"),
+            MessageTemplate messageTemplate = MessageTemplate.and(MessageTemplate.MatchConversationId("StartNegotiation"),
                     MessageTemplate.MatchPerformative(ACLMessage.INFORM));
             ACLMessage incomingMessage = myAgent.receive(messageTemplate);
-
             if (incomingMessage != null) {
+                administrator = incomingMessage.getSender();
                 isBuyer = true;
                 Item wantedItem = getNextWantedItem();
-                sendProposalToAll(wantedItem);
+                if (wantedItem == null) {
+                    //TODO MOVE THIS CHECK TO RIGHT AFTER A TRANSACTION IS COMPLETE
+                    System.out.println("#######################################################################");
+                    System.out.println("# Name: "+myAgent.getLocalName());
+                    System.out.println("# Inventory: "+inventory);
+                    System.out.println("# WishList: "+wishlist);
+                    System.out.println("#######################################################################");
+                    sendFinishedMessage();
+                } else {
+                    sendProposalToAll(wantedItem);
+                }
             }
             else {
                 block();
@@ -108,6 +127,12 @@ public class NegotiatingAgent extends Agent {
             return null;
         }
 
+        private void sendFinishedMessage() {
+            ACLMessage message = new ACLMessage(ACLMessage.INFORM);
+            message.setConversationId("Finished");
+            message.addReceiver(administrator);
+            myAgent.send(message);
+        }
 
         private void sendProposalToAll(Item wantedItem) {
             findAllOtherNegotiators();
@@ -150,7 +175,8 @@ public class NegotiatingAgent extends Agent {
         @Override
         public void action() {
             MessageTemplate messageTemplate = MessageTemplate.and(MessageTemplate.MatchConversationId("proposal on item"),
-                    MessageTemplate.MatchPerformative(ACLMessage.PROPOSE));
+                    MessageTemplate.or(MessageTemplate.MatchPerformative(ACLMessage.PROPOSE),
+                            MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL)));
             ACLMessage incomingMessage = myAgent.receive(messageTemplate);
 
             if (incomingMessage != null) {
@@ -158,46 +184,80 @@ public class NegotiatingAgent extends Agent {
                 String[] proposalContent = incomingMessage.getContent().split(":");
                 Item wantedItem = isBuyer ? getItemFromWishList(proposalContent[0]) : getItemFromInventory(proposalContent[0]);
                 int proposedPrice = Integer.parseInt(proposalContent[1]);
-                if (wantedItem != null) {
-                    ACLMessage returnMessage = null;
-                    int proposalUtility;
-                    int newProposalUtility;
-                    int newProposalPrice;
+                if (incomingMessage.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
+                    performTransaction(wantedItem, proposedPrice, isBuyer);
                     if (isBuyer) {
-                        proposalUtility = Utility.getBuyersUtility(wantedItem, proposedPrice);
-                        newProposalPrice = Utility.getBuyersNextBid(wishlist, money, wantedItem, timeSpent, totalTimeAllowed);
-                        newProposalUtility = Utility.getBuyersUtility(wantedItem, newProposalPrice);
-                        System.out.println("--------------BUYER: "+myAgent.getLocalName()+"------------------");
-                        System.out.println("Retail price: "+wantedItem.getValue());
-                        System.out.println("Sellers proposed price: "+proposedPrice);
-                        System.out.println("Buyers new proposal price: "+newProposalPrice);
-                        System.out.println("Time spent: "+timeSpent+", of total: "+totalTimeAllowed);
+                        sendNegotiationsEndedMessage();
+                        isBuyer = false;
                     }
-                    else {
-                        proposalUtility = Utility.getSellersUtility(wantedItem);
-                        newProposalPrice = Utility.getSellersNextBid(wantedItem, timeSpent, totalTimeAllowed);
-                        newProposalUtility = Utility.convertPriceToSellersUtility(newProposalPrice);
-                        System.out.println("--------------SELLER: "+myAgent.getLocalName()+"------------------");
-                        System.out.println("Retail price: "+wantedItem.getValue());
-                        System.out.println("Buyers proposed price: "+proposedPrice);
-                        System.out.println("Sellers new proposal price: "+newProposalPrice);
-                        System.out.println("Time spent: "+timeSpent+", of total: "+totalTimeAllowed);
-                    }
+                    timeSpent = 0;
+                } else {
+                    if (wantedItem != null) {
+                        ACLMessage returnMessage = null;
+                        int proposalUtility;
+                        int newProposalUtility;
+                        int newProposalPrice;
+                        if (isBuyer) {
+                            proposalUtility = Utility.getBuyersUtility(wantedItem, proposedPrice);
+                            newProposalPrice = Utility.getBuyersNextBid(wishlist, money, wantedItem, timeSpent, totalTimeAllowed);
+                            newProposalUtility = Utility.getBuyersUtility(wantedItem, newProposalPrice);
+                            System.out.println("--------------BUYER: "+myAgent.getLocalName()+"------------------");
+                            System.out.println("Retail price: "+wantedItem.getValue());
+                            System.out.println("Sellers proposed price: "+proposedPrice);
+                            System.out.println("Buyers new proposal price: "+newProposalPrice);
+                            System.out.println("Time spent: "+timeSpent+", of total: "+totalTimeAllowed);
+                        }
+                        else {
+                            proposalUtility = Utility.getSellersUtility(wantedItem);
+                            newProposalPrice = Utility.getSellersNextBid(wantedItem, timeSpent, totalTimeAllowed);
+                            newProposalUtility = Utility.convertPriceToSellersUtility(newProposalPrice);
+                            System.out.println("--------------SELLER: "+myAgent.getLocalName()+"------------------");
+                            System.out.println("Retail price: "+wantedItem.getValue());
+                            System.out.println("Buyers proposed price: "+proposedPrice);
+                            System.out.println("Sellers new proposal price: "+newProposalPrice);
+                            System.out.println("Time spent: "+timeSpent+", of total: "+totalTimeAllowed);
+                        }
 
-                    if (newProposalUtility < proposalUtility) {
-                        System.out.println("YAY");
-                        returnMessage = createAcceptProposal(incomingMessage, proposedPrice);
-                        //TODO start transaction
+                        if (newProposalUtility < proposalUtility) {
+                            returnMessage = createAcceptProposal(incomingMessage, proposedPrice);
+                            performTransaction(wantedItem, proposedPrice, isBuyer);
+                            if (isBuyer) {
+                                sendNegotiationsEndedMessage();
+                                isBuyer = false;
+                            }
+                            timeSpent = 0;
+                        }
+                        else {
+                            //TODO handle failed negotiations
+                            returnMessage = createPropositionMessage(incomingMessage, newProposalPrice);
+                        }
+                        myAgent.send(returnMessage);
                     }
-                    else {
-                        returnMessage = createPropositionMessage(incomingMessage, newProposalPrice);
-                    }
-                    myAgent.send(returnMessage);
                 }
             }
             else {
                 block();
             }
+        }
+
+        private void sendNegotiationsEndedMessage() {
+            ACLMessage message = new ACLMessage(ACLMessage.INFORM);
+            message.setConversationId("NegotiationsEnded");
+            message.addReceiver(administrator);
+            System.out.println("Sending negotiations ended to: "+administrator);
+            myAgent.send(message);
+        }
+
+        private void performTransaction(Item item, int price, boolean isBuyer) {
+            if (isBuyer) {
+                substractMoney(price);
+                item.setValue(price);
+                inventory.add(item);
+            } else {
+                addMoney(price);
+                inventory.remove(item);
+            }
+            System.out.println(myAgent.getLocalName() + " has items: "+inventory+", and money: "+money);
         }
 
         private Item getItemFromInventory(String wantedItemName) {

@@ -73,7 +73,7 @@ public class ItemAdministratorAgent extends Agent {
         public void sendStartMessageToAgent(AID agent) {
             ACLMessage message = new ACLMessage(ACLMessage.INFORM);
             message.addReceiver(agent);
-            message.setConversationId("Negotiation");
+            message.setConversationId("StartNegotiation");
             myAgent.send(message);
         }
 
@@ -86,11 +86,19 @@ public class ItemAdministratorAgent extends Agent {
                     break;
                 default:
                     MessageTemplate messageTemplate = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM),
-                            MessageTemplate.MatchConversationId("NegotiationsEnded"));
-                    if (myAgent.receive(messageTemplate) != null) {
-                        sendStartMessageToAgent(negotiatingAgents.get(counter % negotiatingAgents.size()));
-                        counter++;
-                        break;
+                            MessageTemplate.or(MessageTemplate.MatchConversationId("NegotiationsEnded"),
+                                    MessageTemplate.MatchConversationId("Finished")));
+                    ACLMessage message = myAgent.receive(messageTemplate);
+                    if (message != null) {
+                        if (message.getConversationId().equals("NegotiationsEnded")) {
+                            System.out.println("*********************************************NEXT ROUND **************************************************");
+                            sendStartMessageToAgent(negotiatingAgents.get(counter % negotiatingAgents.size()));
+                            counter++;
+                            break;
+                        } else {
+                            //TODO HANDLE WINNING AGENTS
+                        }
+
                     }
             }
         }
