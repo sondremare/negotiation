@@ -94,8 +94,6 @@ public class NegotiatingAgent extends Agent {
     protected void setup() {
         addBehaviour(new RegisterBehaviour(getAID()));
         addBehaviour(new ReceiveItemListBehaviour());
-        addBehaviour(new GetInventoryInfoBehaviour());
-        addBehaviour(new RespondToInventoryRequestBehaviour());
 
         addBehaviour(new StartNegotiationBehaviour());
         addBehaviour(new RespondToProposalBehaviour());

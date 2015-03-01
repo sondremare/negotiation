@@ -21,5 +21,8 @@ public class ReceiveIfAgentIsFinishedBehaviour extends CyclicBehaviour {
                 ((ItemAdministratorAgent) myAgent).setWinningAgent(message.getSender().getLocalName());
             }
         }
+        else {
+            block();
+        }
     }
 }

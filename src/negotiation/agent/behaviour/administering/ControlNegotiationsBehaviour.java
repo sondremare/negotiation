@@ -46,6 +46,9 @@ public class ControlNegotiationsBehaviour extends CyclicBehaviour {
                         counter++;
                     }
                 }
+                else {
+                    block();
+                }
                 break;
         }
     }
