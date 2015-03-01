@@ -5,8 +5,8 @@ import jade.core.AID;
 import java.util.*;
 
 public class ItemFactory {
-    private static int MIN_PER_AGENT = 2;
-    private static int MAX_PER_AGENT = 4;
+    private static int MIN_PER_AGENT = 3;
+    private static int MAX_PER_AGENT = 6;
     private static int MIN_ITEM_VALUE = 200;
     private static int MAX_ITEM_VALUE = 1000;
 
