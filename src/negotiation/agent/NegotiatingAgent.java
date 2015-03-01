@@ -16,6 +16,7 @@ import negotiation.util.ItemFactory;
 import negotiation.util.Utility;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -118,6 +119,7 @@ public class NegotiatingAgent extends Agent {
 
         @Override
         public void action() {
+
             MessageTemplate messageTemplate = MessageTemplate.and(MessageTemplate.MatchConversationId("StartNegotiation"),
                     MessageTemplate.MatchPerformative(ACLMessage.INFORM));
             ACLMessage incomingMessage = myAgent.receive(messageTemplate);
@@ -146,12 +148,20 @@ public class NegotiatingAgent extends Agent {
                 }
             }
             proposalMessage.setConversationId("proposal on item");
-            proposalMessage.setContent(wantedItem.getName() + ":" + 0);
+            proposalMessage.setContent(wantedItem.getName() + ":" + 0 + ":" + getInventoryAsString());
             System.out.println(myAgent.getLocalName() + " sending proposal to all for item: " + wantedItem.getName());
             myAgent.send(proposalMessage);
         }
 
-        //TODO This method is duplicated for two different behaviours 
+        private String getInventoryAsString() {
+            String returnString = "";
+            for (Item inventoryItem : inventory) {
+                returnString += inventoryItem.getName() + ",";
+            }
+            return returnString;
+        }
+
+        //TODO This method is duplicated for two different behaviours
         private void findAllOtherNegotiators() {
             DFAgentDescription template = new DFAgentDescription();
             ServiceDescription sd = new ServiceDescription();
@@ -193,15 +203,19 @@ public class NegotiatingAgent extends Agent {
                 timeSpent++;
                 String[] proposalContent = incomingMessage.getContent().split(":");
                 Item wantedItem = isBuyer ? getItemFromWishList(proposalContent[0]) : getItemFromInventory(proposalContent[0]);
-                if (incomingMessage.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
-                    int proposedPrice = Integer.parseInt(proposalContent[1]);
-                    performTransaction(wantedItem, proposedPrice, isBuyer);
-                    endNegotiations();
-                } else if (incomingMessage.getPerformative() == ACLMessage.REFUSE) {
+                String exchangeItemName = proposalContent[2];
+                ArrayList<String> otherAgentInventory = new ArrayList<String>(Arrays.asList(exchangeItemName.split(",")));
+                Item sellerWantedItem = findWantedItem(otherAgentInventory);
+                if (incomingMessage.getPerformative() == ACLMessage.REFUSE) {
                     System.out.println(myAgent.getLocalName() + " got a refusal from " + incomingMessage.getSender().getLocalName());
+                    endNegotiations();
+                } else if (incomingMessage.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
+                    int proposedPrice = Integer.parseInt(proposalContent[1]);
+                    performTransaction(wantedItem, proposedPrice, isBuyer, sellerWantedItem);
                     endNegotiations();
                 } else {
                     int proposedPrice = Integer.parseInt(proposalContent[1]);
+
                     if (wantedItem != null) {
                         ACLMessage returnMessage;
                         int proposalUtility;
@@ -210,6 +224,9 @@ public class NegotiatingAgent extends Agent {
                         if (isBuyer) {
                             proposalUtility = Utility.getBuyersUtility(wantedItem, proposedPrice);
                             newProposalPrice = Utility.getBuyersNextBid(wishlist, money, wantedItem, timeSpent, totalTimeAllowed);
+                            if (sellerWantedItem != null) {
+                                newProposalPrice -= Utility.getSellersNextBid(sellerWantedItem, timeSpent, totalTimeAllowed);
+                            }
                             newProposalUtility = Utility.getBuyersUtility(wantedItem, newProposalPrice);
                             System.out.println("--------------BUYER: "+myAgent.getLocalName()+"------------------");
                             System.out.println("Item name: "+wantedItem.getName());
@@ -221,6 +238,9 @@ public class NegotiatingAgent extends Agent {
                         else {
                             proposalUtility = Utility.getSellersUtility(proposedPrice);
                             newProposalPrice = Utility.getSellersNextBid(wantedItem, timeSpent, totalTimeAllowed);
+                            if (sellerWantedItem != null) {
+                                newProposalPrice -= Utility.getBuyersNextBid(wishlist, money, sellerWantedItem, timeSpent, totalTimeAllowed);
+                            }
                             newProposalUtility = Utility.getSellersUtility(newProposalPrice);
                             System.out.println("--------------SELLER: "+myAgent.getLocalName()+"------------------");
                             System.out.println("Item name: "+wantedItem.getName());
@@ -232,18 +252,15 @@ public class NegotiatingAgent extends Agent {
 
                         if (newProposalUtility < proposalUtility) {
                             System.out.println("This agent was about to propose: " + newProposalPrice + " with utility: " + newProposalUtility + " Both agree to the price: " + proposedPrice + " with utility: " + proposalUtility);
-                            returnMessage = createAcceptProposal(incomingMessage, proposedPrice);
-                            performTransaction(wantedItem, proposedPrice, isBuyer);
+                            returnMessage = createAcceptProposal(incomingMessage, proposedPrice, sellerWantedItem);
+                            performTransaction(wantedItem, proposedPrice, isBuyer, sellerWantedItem);
                             endNegotiations();                        }
                         else if (timeSpent >= totalTimeAllowed) {
-                            System.out.println("TIMEOUT");
-                            //int nonAcceptablePrice = isBuyer ? Utility.getBuyersNextBid(wishlist, money, wantedItem, timeSpent-1, totalTimeAllowed) : Utility.getSellersNextBid(wantedItem, timeSpent-1, totalTimeAllowed);
-                            //System.out.println("With non acceptable price is: " + nonAcceptablePrice);
                             returnMessage = createRefuseMessage(incomingMessage);
                             endNegotiations();
                         }
                         else {
-                            returnMessage = createPropositionMessage(incomingMessage, newProposalPrice);
+                            returnMessage = createPropositionMessage(incomingMessage, newProposalPrice, sellerWantedItem);
                         }
                         myAgent.send(returnMessage);
                     }
@@ -255,6 +272,22 @@ public class NegotiatingAgent extends Agent {
             else {
                 block();
             }
+        }
+
+        private Item findWantedItem(ArrayList<String> otherAgentInventory) {
+            for (String itemName : otherAgentInventory) {
+                for (Item wantedItem : wishlist) {
+                    if (itemName.equals(wantedItem.getName())){
+                        return wantedItem;
+                    }
+                }
+                for (Item inventoryItem : inventory) {
+                    if (itemName.equals(inventoryItem.getName())){
+                        return inventoryItem;
+                    }
+                }
+            }
+            return null;
         }
 
         private void sendFinishedMessage() {
@@ -271,14 +304,21 @@ public class NegotiatingAgent extends Agent {
 
         }
 
-        private void performTransaction(Item item, int price, boolean isBuyer) {
+        private void performTransaction(Item item, int price, boolean isBuyer, Item sellersWantedItem) {
             if (isBuyer) {
                 substractMoney(price);
                 item.setValue(price);
                 inventory.add(item);
+                if (sellersWantedItem != null) {
+                    inventory.remove(sellersWantedItem);
+                    System.out.println(" A TRADE WAS COMPLETED!! " + item.getName() + " was traded for " + sellersWantedItem.getName() + " for an added " + price + " money");
+                }
             } else {
                 addMoney(price);
                 inventory.remove(item);
+                if (sellersWantedItem != null) {
+                    inventory.add(sellersWantedItem);
+                }
             }
             System.out.println(myAgent.getLocalName() + " has items: "+inventory+", and money: "+money);
         }
@@ -301,21 +341,21 @@ public class NegotiatingAgent extends Agent {
             return null;
         }
 
-        private ACLMessage createPropositionMessage(ACLMessage incomingMessage, int newProposalPrice)
+        private ACLMessage createPropositionMessage(ACLMessage incomingMessage, int newProposalPrice, Item sellerWantedItem)
         {
             ACLMessage responseMessage = incomingMessage.createReply();
             String nameOfItem = incomingMessage.getContent().split(":")[0];
-            responseMessage.setContent(nameOfItem + ":" + newProposalPrice);
+            responseMessage.setContent(nameOfItem + ":" + newProposalPrice + ":" + sellerWantedItem);
             responseMessage.setPerformative(ACLMessage.PROPOSE);
             responseMessage.setConversationId("proposal on item");
             return responseMessage;
         }
 
-        private ACLMessage createAcceptProposal(ACLMessage incomingMessage, int acceptablePrice) {
+        private ACLMessage createAcceptProposal(ACLMessage incomingMessage, int acceptablePrice, Item sellerWantedItem) {
             ACLMessage responseMessage = incomingMessage.createReply();
             responseMessage.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
             String nameOfItem = incomingMessage.getContent().split(":")[0];
-            responseMessage.setContent(nameOfItem + ":" + acceptablePrice);
+            responseMessage.setContent(nameOfItem + ":" + acceptablePrice + ":" + sellerWantedItem);
             return responseMessage;
         }
 
@@ -323,7 +363,7 @@ public class NegotiatingAgent extends Agent {
             ACLMessage responseMessage = incomingMessage.createReply();
             responseMessage.setPerformative(ACLMessage.REFUSE);
             String nameOfItem = incomingMessage.getContent().split(":")[0];
-            responseMessage.setContent(nameOfItem + ":");
+            responseMessage.setContent(nameOfItem + ":-:-");
             return responseMessage;
         }
 
