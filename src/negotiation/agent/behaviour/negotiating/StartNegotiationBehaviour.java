@@ -47,9 +47,16 @@ public class StartNegotiationBehaviour extends CyclicBehaviour {
             }
         }
         proposalMessage.setConversationId("proposal on item");
-        proposalMessage.setContent(wantedItem.getName() + ":" + 0);
+        proposalMessage.setContent(wantedItem.getName() + ":" + 0 + ":" + getInventoryAsString());
         System.out.println(myAgent.getLocalName() + " sending proposal to all for item: " + wantedItem.getName());
         myAgent.send(proposalMessage);
+    }
+    private String getInventoryAsString() {
+        String returnString = "";
+        for (Item inventoryItem : ((NegotiatingAgent)myAgent).getInventory()) {
+            returnString += inventoryItem.getName() + ",";
+        }
+        return returnString;
     }
 
     //TODO This method is duplicated for two different behaviours

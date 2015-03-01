@@ -7,6 +7,9 @@ import negotiation.agent.NegotiatingAgent;
 import negotiation.util.Item;
 import negotiation.util.Utility;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 public class RespondToProposalBehaviour extends CyclicBehaviour {
     private int timeSpent = 0;
 
@@ -29,12 +32,15 @@ public class RespondToProposalBehaviour extends CyclicBehaviour {
             timeSpent++;
             String[] proposalContent = incomingMessage.getContent().split(":");
             Item wantedItem = ((NegotiatingAgent) myAgent).isBuyer() ? getItemFromWishList(proposalContent[0]) : getItemFromInventory(proposalContent[0]);
-            if (incomingMessage.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
-                int proposedPrice = Integer.parseInt(proposalContent[1]);
-                performTransaction(wantedItem, proposedPrice, ((NegotiatingAgent) myAgent).isBuyer());
-                endNegotiations();
-            } else if (incomingMessage.getPerformative() == ACLMessage.REFUSE) {
+            String exchangeItemName = proposalContent[2];
+            ArrayList<String> otherAgentInventory = new ArrayList<String>(Arrays.asList(exchangeItemName.split(",")));
+            Item sellerWantedItem = findWantedItem(otherAgentInventory);
+            if (incomingMessage.getPerformative() == ACLMessage.REFUSE) {
                 System.out.println(myAgent.getLocalName() + " got a refusal from " + incomingMessage.getSender().getLocalName());
+                endNegotiations();
+            } else if (incomingMessage.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
+                int proposedPrice = Integer.parseInt(proposalContent[1]);
+                performTransaction(wantedItem, proposedPrice, ((NegotiatingAgent) myAgent).isBuyer(), sellerWantedItem);
                 endNegotiations();
             } else {
                 int proposedPrice = Integer.parseInt(proposalContent[1]);
@@ -46,6 +52,9 @@ public class RespondToProposalBehaviour extends CyclicBehaviour {
                     if (((NegotiatingAgent) myAgent).isBuyer()) {
                         proposalUtility = Utility.getBuyersUtility(wantedItem, proposedPrice);
                         newProposalPrice = Utility.getBuyersNextBid(((NegotiatingAgent) myAgent).getWishlist(), ((NegotiatingAgent) myAgent).getMoney(), wantedItem, timeSpent, NegotiatingAgent.totalTimeAllowed);
+                        if (sellerWantedItem != null) {
+                            newProposalPrice -= Utility.getSellersNextBid(sellerWantedItem, timeSpent, NegotiatingAgent.totalTimeAllowed);
+                        }
                         newProposalUtility = Utility.getBuyersUtility(wantedItem, newProposalPrice);
                         System.out.println("--------------BUYER: "+myAgent.getLocalName()+"------------------");
                         System.out.println("Item name: "+wantedItem.getName());
@@ -57,6 +66,9 @@ public class RespondToProposalBehaviour extends CyclicBehaviour {
                     else {
                         proposalUtility = Utility.getSellersUtility(proposedPrice);
                         newProposalPrice = Utility.getSellersNextBid(wantedItem, timeSpent, NegotiatingAgent.totalTimeAllowed);
+                        if (sellerWantedItem != null) {
+                            newProposalPrice -= Utility.getBuyersNextBid(((NegotiatingAgent) myAgent).getWishlist(), ((NegotiatingAgent) myAgent).getMoney(), sellerWantedItem, timeSpent, NegotiatingAgent.totalTimeAllowed);
+                        }
                         newProposalUtility = Utility.getSellersUtility(newProposalPrice);
                         System.out.println("--------------SELLER: "+myAgent.getLocalName()+"------------------");
                         System.out.println("Item name: "+wantedItem.getName());
@@ -68,18 +80,15 @@ public class RespondToProposalBehaviour extends CyclicBehaviour {
 
                     if (newProposalUtility < proposalUtility) {
                         System.out.println("This agent was about to propose: " + newProposalPrice + " with utility: " + newProposalUtility + " Both agree to the price: " + proposedPrice + " with utility: " + proposalUtility);
-                        returnMessage = createAcceptProposal(incomingMessage, proposedPrice);
-                        performTransaction(wantedItem, proposedPrice, ((NegotiatingAgent) myAgent).isBuyer());
+                        returnMessage = createAcceptProposal(incomingMessage, proposedPrice, sellerWantedItem);
+                        performTransaction(wantedItem, proposedPrice, ((NegotiatingAgent) myAgent).isBuyer(), sellerWantedItem);
                         endNegotiations();                        }
                     else if (timeSpent >= NegotiatingAgent.totalTimeAllowed) {
-                        System.out.println("TIMEOUT");
-                        //int nonAcceptablePrice = isBuyer ? Utility.getBuyersNextBid(wishlist, money, wantedItem, timeSpent-1, totalTimeAllowed) : Utility.getSellersNextBid(wantedItem, timeSpent-1, totalTimeAllowed);
-                        //System.out.println("With non acceptable price is: " + nonAcceptablePrice);
                         returnMessage = createRefuseMessage(incomingMessage);
                         endNegotiations();
                     }
                     else {
-                        returnMessage = createPropositionMessage(incomingMessage, newProposalPrice);
+                        returnMessage = createPropositionMessage(incomingMessage, newProposalPrice, sellerWantedItem);
                     }
                     myAgent.send(returnMessage);
                 }
@@ -91,6 +100,22 @@ public class RespondToProposalBehaviour extends CyclicBehaviour {
         else {
             block();
         }
+    }
+
+    private Item findWantedItem(ArrayList<String> otherAgentInventory) {
+        for (String itemName : otherAgentInventory) {
+            for (Item wantedItem : ((NegotiatingAgent) myAgent).getWishlist()) {
+                if (itemName.equals(wantedItem.getName())){
+                    return wantedItem;
+                }
+            }
+            for (Item inventoryItem : ((NegotiatingAgent) myAgent).getInventory()) {
+                if (itemName.equals(inventoryItem.getName())){
+                    return inventoryItem;
+                    }
+                }
+            }
+        return null;
     }
 
     private void sendFinishedMessage() {
@@ -107,14 +132,21 @@ public class RespondToProposalBehaviour extends CyclicBehaviour {
 
     }
 
-    private void performTransaction(Item item, int price, boolean isBuyer) {
+    private void performTransaction(Item item, int price, boolean isBuyer, Item sellersWantedItem) {
         if (isBuyer) {
             ((NegotiatingAgent) myAgent).subtractMoney(price);
             item.setValue(price);
             ((NegotiatingAgent) myAgent).getInventory().add(item);
+            if (sellersWantedItem != null) {
+                ((NegotiatingAgent) myAgent).getInventory().remove(sellersWantedItem);
+                System.out.println(" A TRADE WAS COMPLETED!! " + item.getName() + " was traded for " + sellersWantedItem.getName() + " for an added " + price + " money");
+            }
         } else {
             ((NegotiatingAgent) myAgent).addMoney(price);
             ((NegotiatingAgent) myAgent).getInventory().remove(item);
+            if (sellersWantedItem != null) {
+                ((NegotiatingAgent) myAgent).getInventory().add(sellersWantedItem);
+            }
         }
         System.out.println(myAgent.getLocalName() + " has items: "+ ((NegotiatingAgent) myAgent).getInventory()+", and money: "+ ((NegotiatingAgent) myAgent).getMoney() + " after transaction.");
     }
@@ -137,21 +169,21 @@ public class RespondToProposalBehaviour extends CyclicBehaviour {
         return null;
     }
 
-    private ACLMessage createPropositionMessage(ACLMessage incomingMessage, int newProposalPrice)
+    private ACLMessage createPropositionMessage(ACLMessage incomingMessage, int newProposalPrice, Item sellerWantedItem)
     {
         ACLMessage responseMessage = incomingMessage.createReply();
         String nameOfItem = incomingMessage.getContent().split(":")[0];
-        responseMessage.setContent(nameOfItem + ":" + newProposalPrice);
+        responseMessage.setContent(nameOfItem + ":" + newProposalPrice + ":" + sellerWantedItem);
         responseMessage.setPerformative(ACLMessage.PROPOSE);
         responseMessage.setConversationId("proposal on item");
         return responseMessage;
     }
 
-    private ACLMessage createAcceptProposal(ACLMessage incomingMessage, int acceptablePrice) {
+    private ACLMessage createAcceptProposal(ACLMessage incomingMessage, int acceptablePrice, Item sellerWantedItem) {
         ACLMessage responseMessage = incomingMessage.createReply();
         responseMessage.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
         String nameOfItem = incomingMessage.getContent().split(":")[0];
-        responseMessage.setContent(nameOfItem + ":" + acceptablePrice);
+        responseMessage.setContent(nameOfItem + ":" + acceptablePrice + ":" + sellerWantedItem);
         return responseMessage;
     }
 
@@ -159,7 +191,7 @@ public class RespondToProposalBehaviour extends CyclicBehaviour {
         ACLMessage responseMessage = incomingMessage.createReply();
         responseMessage.setPerformative(ACLMessage.REFUSE);
         String nameOfItem = incomingMessage.getContent().split(":")[0];
-        responseMessage.setContent(nameOfItem + ":");
+        responseMessage.setContent(nameOfItem + ":-:-");
         return responseMessage;
     }
 
