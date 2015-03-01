@@ -25,7 +25,7 @@ public class StartNegotiationBehaviour extends CyclicBehaviour {
         if (incomingMessage != null) {
             System.out.println(myAgent.getLocalName() + " is starting negotiations");
             ((NegotiatingAgent) myAgent).setAdministrator(incomingMessage.getSender());
-            Item wantedItem = ((NegotiatingAgent) myAgent).getNextWantedItem();
+            Item wantedItem = ((NegotiatingAgent) myAgent).getRandomWantedItem();
             if (wantedItem == null) {
                 ((NegotiatingAgent) myAgent).sendNegotiationsEndedMessage(myAgent);
             } else {

@@ -7,6 +7,7 @@ import negotiation.agent.behaviour.negotiating.*;
 import negotiation.util.Item;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 public class NegotiatingAgent extends Agent {
     private ArrayList<Item> inventory;
@@ -62,17 +63,24 @@ public class NegotiatingAgent extends Agent {
     }
 
 
-    public Item getNextWantedItem() {
+    public Item getRandomWantedItem() {
+        ArrayList<Item> wantedButNotOwedItems = new ArrayList<Item>();
         for (Item wantedItem : wishlist) {
             boolean ownsItem = false;
             for (Item inventoryItem : inventory) {
                 ownsItem = ownsItem || (wantedItem.getName().equals(inventoryItem.getName()));
             }
             if (!ownsItem) {
+                wantedButNotOwedItems.add(wantedItem);
                 return wantedItem;
             }
         }
-        return null;
+        if (wantedButNotOwedItems.size() == 0) {
+            return null;
+        }
+        Random random = new Random();
+        int itemIndex = random.nextInt(wantedButNotOwedItems.size());
+        return wantedButNotOwedItems.get(itemIndex);
     }
 
     public void sendNegotiationsEndedMessage(Agent agent) {

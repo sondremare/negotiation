@@ -164,7 +164,7 @@ public class RespondToProposalBehaviour extends CyclicBehaviour {
     }
 
     private void endNegotiations() {
-        Item nextWantedItem = ((NegotiatingAgent) myAgent).getNextWantedItem();
+        Item nextWantedItem = ((NegotiatingAgent) myAgent).getRandomWantedItem();
         if (nextWantedItem == null) { //agent has completed its wishlist
             sendFinishedMessage();
         }
