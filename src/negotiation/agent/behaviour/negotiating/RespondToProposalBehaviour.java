@@ -15,11 +15,6 @@ public class RespondToProposalBehaviour extends CyclicBehaviour {
 
     @Override
     public void action() {
-        try {
-            Thread.sleep(30);
-        } catch(Exception e) {
-
-        }
         MessageTemplate conversationIDMatch = MessageTemplate.MatchConversationId("proposal on item");
         MessageTemplate proposeOrAccept = MessageTemplate.or(MessageTemplate.MatchPerformative(ACLMessage.PROPOSE),
                 MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL));
@@ -36,7 +31,6 @@ public class RespondToProposalBehaviour extends CyclicBehaviour {
             ArrayList<String> otherAgentInventory = new ArrayList<String>(Arrays.asList(exchangeItemName.split(",")));
             Item sellerWantedItem = findWantedItem(otherAgentInventory);
             if (incomingMessage.getPerformative() == ACLMessage.REFUSE) {
-                System.out.println(myAgent.getLocalName() + " got a refusal from " + incomingMessage.getSender().getLocalName());
                 endNegotiations();
             } else if (incomingMessage.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
                 int proposedPrice = Integer.parseInt(proposalContent[1]);
@@ -56,12 +50,6 @@ public class RespondToProposalBehaviour extends CyclicBehaviour {
                             newProposalPrice -= Utility.getSellersNextBid(sellerWantedItem, timeSpent, NegotiatingAgent.totalTimeAllowed);
                         }
                         newProposalUtility = Utility.getBuyersUtility(wantedItem, newProposalPrice);
-                        System.out.println("--------------BUYER: "+myAgent.getLocalName()+"------------------");
-                        System.out.println("Item name: "+wantedItem.getName());
-                        System.out.println("Retail price: "+wantedItem.getValue());
-                        System.out.println("Sellers proposed price: "+proposedPrice);
-                        System.out.println("Buyers new proposal price: "+newProposalPrice);
-                        System.out.println("Time spent: "+ timeSpent+", of total: "+ NegotiatingAgent.totalTimeAllowed);
                     }
                     else {
                         proposalUtility = Utility.getSellersUtility(proposedPrice);
@@ -70,16 +58,9 @@ public class RespondToProposalBehaviour extends CyclicBehaviour {
                             newProposalPrice -= Utility.getBuyersNextBid(((NegotiatingAgent) myAgent).getWishlist(), ((NegotiatingAgent) myAgent).getMoney(), sellerWantedItem, timeSpent, NegotiatingAgent.totalTimeAllowed);
                         }
                         newProposalUtility = Utility.getSellersUtility(newProposalPrice);
-                        System.out.println("--------------SELLER: "+myAgent.getLocalName()+"------------------");
-                        System.out.println("Item name: "+wantedItem.getName());
-                        System.out.println("Retail price: "+wantedItem.getValue());
-                        System.out.println("Buyers proposed price: "+proposedPrice);
-                        System.out.println("Sellers new proposal price: "+newProposalPrice);
-                        System.out.println("Time spent: "+ timeSpent+", of total: "+ NegotiatingAgent.totalTimeAllowed);
                     }
 
                     if (newProposalUtility < proposalUtility) {
-                        System.out.println("This agent was about to propose: " + newProposalPrice + " with utility: " + newProposalUtility + " Both agree to the price: " + proposedPrice + " with utility: " + proposalUtility);
                         returnMessage = createAcceptProposal(incomingMessage, proposedPrice, sellerWantedItem);
                         performTransaction(wantedItem, proposedPrice, ((NegotiatingAgent) myAgent).isBuyer(), sellerWantedItem);
                         endNegotiations();                        }
@@ -123,11 +104,6 @@ public class RespondToProposalBehaviour extends CyclicBehaviour {
         message.setConversationId("Finished");
         message.setContent(String.valueOf(((NegotiatingAgent) myAgent).getMoney()));
         message.addReceiver(((NegotiatingAgent) myAgent).getAdministrator());
-        System.out.println("#######################################################################");
-        System.out.println("# Name: "+myAgent.getLocalName());
-        System.out.println("# Inventory: "+ ((NegotiatingAgent) myAgent).getInventory());
-        System.out.println("# WishList: "+ ((NegotiatingAgent) myAgent).getWishlist());
-        System.out.println("#######################################################################");
         myAgent.send(message);
 
     }
@@ -139,7 +115,6 @@ public class RespondToProposalBehaviour extends CyclicBehaviour {
             ((NegotiatingAgent) myAgent).getInventory().add(item);
             if (sellersWantedItem != null) {
                 ((NegotiatingAgent) myAgent).getInventory().remove(sellersWantedItem);
-                System.out.println(" A TRADE WAS COMPLETED!! " + item.getName() + " was traded for " + sellersWantedItem.getName() + " for an added " + price + " money");
             }
         } else {
             ((NegotiatingAgent) myAgent).addMoney(price);
@@ -148,7 +123,6 @@ public class RespondToProposalBehaviour extends CyclicBehaviour {
                 ((NegotiatingAgent) myAgent).getInventory().add(sellersWantedItem);
             }
         }
-        System.out.println(myAgent.getLocalName() + " has items: "+ ((NegotiatingAgent) myAgent).getInventory()+", and money: "+ ((NegotiatingAgent) myAgent).getMoney() + " after transaction.");
     }
 
     private Item getItemFromInventory(String wantedItemName) {

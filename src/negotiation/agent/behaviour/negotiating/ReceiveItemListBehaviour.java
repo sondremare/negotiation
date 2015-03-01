@@ -23,7 +23,6 @@ public class ReceiveItemListBehaviour extends CyclicBehaviour {
             ArrayList<Item> wishlist = ItemFactory.parseItemList(itemLists[1]);
             ((NegotiatingAgent) myAgent).setInventory(inventory);
             ((NegotiatingAgent) myAgent).setWishlist(wishlist);
-            System.out.println(myAgent.getLocalName() + " has items: " + inventory + "  and wants: " + wishlist);
         }
         else {
             block();

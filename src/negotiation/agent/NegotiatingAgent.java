@@ -87,7 +87,6 @@ public class NegotiatingAgent extends Agent {
         ACLMessage message = new ACLMessage(ACLMessage.INFORM);
         message.setConversationId("NegotiationsEnded");
         message.addReceiver(administrator);
-        System.out.println(agent.getLocalName()+ " sending negotiations ended to: "+administrator);
         agent.send(message);
     }
 

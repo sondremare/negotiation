@@ -13,7 +13,6 @@ public class ReceiveIfAgentIsFinishedBehaviour extends CyclicBehaviour {
                 MessageTemplate.MatchConversationId("Finished"));
         ACLMessage message = myAgent.receive(messageTemplate);
         if (message != null) {
-            System.out.println("received finished message");
             ((ItemAdministratorAgent) myAgent).setOneAgentFinished(true);
             int agentsMoney = Integer.parseInt(message.getContent());
             if (agentsMoney > ((ItemAdministratorAgent) myAgent).getMaxMoney()) {

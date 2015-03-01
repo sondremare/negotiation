@@ -23,7 +23,6 @@ public class StartNegotiationBehaviour extends CyclicBehaviour {
                 MessageTemplate.MatchPerformative(ACLMessage.INFORM));
         ACLMessage incomingMessage = myAgent.receive(messageTemplate);
         if (incomingMessage != null) {
-            System.out.println(myAgent.getLocalName() + " is starting negotiations");
             ((NegotiatingAgent) myAgent).setAdministrator(incomingMessage.getSender());
             Item wantedItem = ((NegotiatingAgent) myAgent).getRandomWantedItem();
             if (wantedItem == null) {
@@ -48,7 +47,6 @@ public class StartNegotiationBehaviour extends CyclicBehaviour {
         }
         proposalMessage.setConversationId("proposal on item");
         proposalMessage.setContent(wantedItem.getName() + ":" + 0 + ":" + getInventoryAsString());
-        System.out.println(myAgent.getLocalName() + " sending proposal to all for item: " + wantedItem.getName());
         myAgent.send(proposalMessage);
     }
     private String getInventoryAsString() {

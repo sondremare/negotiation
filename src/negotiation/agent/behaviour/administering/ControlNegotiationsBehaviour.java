@@ -17,7 +17,6 @@ public class ControlNegotiationsBehaviour extends CyclicBehaviour {
     }
 
     public void sendStartMessageToAgent(AID agent) {
-        System.out.println("Admin says START NEGOTIATION");
         ACLMessage message = new ACLMessage(ACLMessage.INFORM);
         message.addReceiver(agent);
         message.setConversationId("StartNegotiation");
@@ -37,9 +36,7 @@ public class ControlNegotiationsBehaviour extends CyclicBehaviour {
                 ACLMessage message = myAgent.receive(messageTemplate);
                 if (message != null) {
                     if (counter % negotiatingAgents.size() == 0 && ((ItemAdministratorAgent) myAgent).isOneAgentFinished()) { //new round starting, and we check if someone is done
-                        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
                         System.out.println(((ItemAdministratorAgent) myAgent).getWinningAgent()+ " won the negotiations with "+ ((ItemAdministratorAgent) myAgent).getMaxMoney()+" money.");
-                        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
                         this.done();
                     } else {
                         sendStartMessageToAgent(negotiatingAgents.get(counter % negotiatingAgents.size()));

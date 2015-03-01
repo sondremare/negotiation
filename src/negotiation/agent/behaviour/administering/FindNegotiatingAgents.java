@@ -31,7 +31,6 @@ public class FindNegotiatingAgents extends OneShotBehaviour {
             for (int i = 0; i < result.length; i++) {
                 negotiatingAgents.add(result[i].getName());
             }
-            System.out.println(negotiatingAgents.size());
             ((ItemAdministratorAgent)myAgent).setNegotiatingAgents(negotiatingAgents);
             myAgent.addBehaviour(new SendItemListsToAgents());
 
