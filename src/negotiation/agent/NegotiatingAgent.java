@@ -22,7 +22,7 @@ import java.util.Random;
 public class NegotiatingAgent extends Agent {
     private ArrayList<Item> inventory;
     private ArrayList<Item> wishlist;
-    private int money = 800;
+    private int money = 2000;
     private boolean isBuyer = false;
     private int timeSpent = 0;
     private AID administrator;
