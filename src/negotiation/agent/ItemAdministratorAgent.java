@@ -2,124 +2,52 @@ package negotiation.agent;
 
 import jade.core.AID;
 import jade.core.Agent;
-import jade.core.behaviours.CyclicBehaviour;
-import jade.core.behaviours.OneShotBehaviour;
-import jade.domain.DFService;
-import jade.domain.FIPAAgentManagement.DFAgentDescription;
-import jade.domain.FIPAAgentManagement.ServiceDescription;
-import jade.domain.FIPAException;
-import jade.lang.acl.ACLMessage;
-import jade.lang.acl.MessageTemplate;
-import negotiation.util.ItemFactory;
+import negotiation.agent.behaviour.administering.FindNegotiatingAgents;
 
 import java.util.ArrayList;
 
 public class ItemAdministratorAgent extends Agent {
 
     private ArrayList<AID> negotiatingAgents;
-    private int counter = 0;
     private boolean oneAgentFinished = false;
     private int maxMoney = Integer.MIN_VALUE;
     private String winningAgent;
 
+    public ArrayList<AID> getNegotiatingAgents() {
+        return negotiatingAgents;
+    }
+
+    public void setNegotiatingAgents(ArrayList<AID> negotiatingAgents) {
+        this.negotiatingAgents = negotiatingAgents;
+    }
+
+    public boolean isOneAgentFinished() {
+        return oneAgentFinished;
+    }
+
+    public void setOneAgentFinished(boolean oneAgentFinished) {
+        this.oneAgentFinished = oneAgentFinished;
+    }
+
+    public int getMaxMoney() {
+        return maxMoney;
+    }
+
+    public void setMaxMoney(int maxMoney) {
+        this.maxMoney = maxMoney;
+    }
+
+    public String getWinningAgent() {
+        return winningAgent;
+    }
+
+    public void setWinningAgent(String winningAgent) {
+        this.winningAgent = winningAgent;
+    }
+
+    @Override
     protected void setup() {
         addBehaviour(new FindNegotiatingAgents());
     }
 
-    private class FindNegotiatingAgents extends OneShotBehaviour {
-
-        @Override
-        public void action() {
-
-            try{
-                Thread.sleep(1000);
-            } catch (InterruptedException e){
-                e.printStackTrace();
-            }
-
-            DFAgentDescription template = new DFAgentDescription();
-            ServiceDescription serviceDescription = new ServiceDescription();
-            serviceDescription.setType("NegotiatingAgent");
-            template.addServices(serviceDescription);
-            try {
-                DFAgentDescription[] result = DFService.search(myAgent, template);
-                negotiatingAgents = new ArrayList<AID>();
-                for (int i = 0; i < result.length; i++) {
-                    negotiatingAgents.add(result[i].getName());
-                }
-                myAgent.addBehaviour(new SendItemListsToAgents());
-
-            } catch (FIPAException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private class SendItemListsToAgents extends OneShotBehaviour {
-
-        @Override
-        public void action() {
-            String[] agentItems = ItemFactory.getItemsForAgents(negotiatingAgents);
-            for (int i = 0; i < negotiatingAgents.size(); i++) {
-                ACLMessage message = new ACLMessage(ACLMessage.INFORM);
-                message.addReceiver(negotiatingAgents.get(i));
-                message.setContent(agentItems[i]);
-                message.setConversationId("ItemList");
-                myAgent.send(message);
-            }
-            addBehaviour(new ControlNegotiationsBehaviour());
-        }
-    }
-
-    private class ControlNegotiationsBehaviour extends CyclicBehaviour {
-
-        public void sendStartMessageToAgent(AID agent) {
-            ACLMessage message = new ACLMessage(ACLMessage.INFORM);
-            message.addReceiver(agent);
-            message.setConversationId("StartNegotiation");
-            myAgent.send(message);
-        }
-
-        @Override
-        public void action() {
-            switch (counter) {
-                case 0:
-                    sendStartMessageToAgent(negotiatingAgents.get(counter % negotiatingAgents.size()));
-                    counter++;
-                    break;
-                default:
-                    MessageTemplate messageTemplate = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM),
-                            MessageTemplate.or(MessageTemplate.MatchConversationId("NegotiationsEnded"),
-                                    MessageTemplate.MatchConversationId("Finished")));
-                    ACLMessage message = myAgent.receive(messageTemplate);
-                    if (message != null) {
-                        if (message.getConversationId().equals("Finished")) {
-                            System.out.println("received finished message");
-                            oneAgentFinished = true;
-                            int agentsMoney = Integer.parseInt(message.getContent());
-                            if (agentsMoney > maxMoney) {
-                                maxMoney = agentsMoney;
-                                winningAgent = message.getSender().getLocalName();
-                            }
-                        } else {
-                            if (counter % negotiatingAgents.size() == 0) { //new round starting
-                                if (oneAgentFinished) {
-                                    System.out.println(winningAgent+ " won the negotiations with "+maxMoney+" money.");
-                                    this.done();
-                                } else {
-                                    sendStartMessageToAgent(negotiatingAgents.get(counter % negotiatingAgents.size()));
-                                    counter++;
-                                }
-                            } else {
-                                sendStartMessageToAgent(negotiatingAgents.get(counter % negotiatingAgents.size()));
-                                counter++;
-                            }
-
-                        }
-                    } else {
-                        block();
-                    }
-            }
-        }
-    }
 }
