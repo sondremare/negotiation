@@ -17,6 +17,7 @@ import negotiation.util.Utility;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Random;
 
 public class NegotiatingAgent extends Agent {
     private ArrayList<Item> inventory;
@@ -36,17 +37,23 @@ public class NegotiatingAgent extends Agent {
         this.money += money;
     }
 
-    private Item getNextWantedItem() {
+    private Item getRandomWantedItem() {
+        ArrayList<Item> wantedButNotOwedItems = new ArrayList<Item>();
         for (Item wantedItem : wishlist) {
             boolean ownsItem = false;
             for (Item inventoryItem : inventory) {
                 ownsItem = ownsItem || (wantedItem.getName().equals(inventoryItem.getName()));
             }
             if (!ownsItem) {
-                return wantedItem;
+                wantedButNotOwedItems.add(wantedItem);
             }
         }
-        return null;
+        if (wantedButNotOwedItems.size() == 0) {
+            return null;
+        }
+        Random random = new Random();
+        int itemIndex = random.nextInt(wantedButNotOwedItems.size());
+        return wantedButNotOwedItems.get(itemIndex);
     }
 
     private void sendNegotiationsEndedMessage(Agent agent) {
@@ -117,7 +124,7 @@ public class NegotiatingAgent extends Agent {
             if (incomingMessage != null) {
                 System.out.println(myAgent.getLocalName() + " is starting negotiations");
                 administrator = incomingMessage.getSender();
-                Item wantedItem = getNextWantedItem();
+                Item wantedItem = getRandomWantedItem();
                 if (wantedItem == null) {
                     sendNegotiationsEndedMessage(myAgent);
                 } else {
@@ -321,7 +328,7 @@ public class NegotiatingAgent extends Agent {
         }
 
         private void endNegotiations() {
-            Item nextWantedItem = getNextWantedItem();
+            Item nextWantedItem = getRandomWantedItem();
             if (nextWantedItem == null) { //agent has completed its wishlist
                 sendFinishedMessage();
             }
